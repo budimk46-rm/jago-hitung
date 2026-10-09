@@ -92,9 +92,9 @@ h1,h2,h3,p{margin:0}
 .pencil{width:64px;height:112px;flex:none;overflow:visible}
 .pencil .cheek{opacity:0;transition:opacity .15s}
 .pencil.happy .cheek{opacity:.9}
-.nameline{display:flex;align-items:baseline;gap:10px;border-bottom:3px solid var(--blue);padding-bottom:2px}
+.nameline{display:flex;align-items:center;gap:10px;margin-top:12px}
 .nameline label{font:700 18px var(--f-disp);color:var(--blue)}
-.nameline input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:600 22px var(--f-disp);padding:6px 0;user-select:text;-webkit-user-select:text}
+.nameline input{border-bottom:3px solid var(--blue);flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:600 22px var(--f-disp);padding:6px 0;user-select:text;-webkit-user-select:text}
 .nameline input::placeholder{color:var(--muted);opacity:.7;font-weight:400}
 .sect{font:700 15px var(--f-disp);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .grades{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -121,6 +121,23 @@ h1,h2,h3,p{margin:0}
 .topic small{font:400 14px var(--f-body);color:var(--muted)}
 .topic.all{background:var(--blue);color:var(--on-blue);border-color:var(--blue-d);box-shadow:0 5px 0 var(--blue-d)}
 .topic.all small{color:var(--on-blue);opacity:.85}
+
+
+.profs{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.prof{flex:1 1 0;min-width:76px;max-width:120px;background:var(--card);border:2px solid var(--line);border-radius:16px;box-shadow:0 4px 0 var(--shadow);padding:8px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;font:700 14px var(--f-disp)}
+.prof svg{width:52px;height:52px;display:block}
+.prof span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-inline:4px}
+.prof.on{background:var(--yellow);color:#1d2a44;box-shadow:0 4px 0 var(--ink)}
+.prof.add{justify-content:center;color:var(--muted);border-style:dashed;box-shadow:none;font-size:13px}
+.prof.add b{font:700 28px/1 var(--f-disp)}
+.avbtn{flex:none;width:56px;height:56px;border-radius:50%;padding:0;background:none;position:relative}
+.avbtn svg{width:56px;height:56px;display:block}
+.avbtn i{position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;border-radius:50%;background:var(--blue);color:var(--on-blue);font:700 12px/20px var(--f-disp);text-align:center;font-style:normal}
+.avpick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.avpick button{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:4px;box-shadow:0 3px 0 var(--shadow)}
+.avpick button.on{border-color:var(--blue);box-shadow:0 3px 0 var(--blue-d)}
+.avpick svg{width:100%;height:auto;display:block}
+.delp{border:0;box-shadow:none;background:none;width:auto;text-align:left;margin-top:8px;font:600 14px var(--f-body);color:var(--muted);text-decoration:underline;background:none;padding:6px 0}
 
 /* ---------- Main ---------- */
 #play{padding-block:12px 0;gap:0}
@@ -280,7 +297,11 @@ h1,h2,h3,p{margin:0}
       </div>
       <div id="mHome" aria-hidden="true"></div>
     </div>
-    <div class="nameline"><label for="nm">Nama</label><input id="nm" maxlength="14" autocomplete="off" placeholder="ketik namamu" /></div>
+    <h2 class="sect">Siapa yang belajar?</h2>
+    <div id="profs" class="profs"></div>
+    <div class="nameline"><button id="avbtn" class="avbtn" type="button" aria-label="Ganti gambar profil"></button><label for="nm">Nama</label><input id="nm" maxlength="14" autocomplete="off" placeholder="ketik namamu" /></div>
+    <div id="avpick" class="avpick" hidden></div>
+    <button id="delp" class="delp" type="button" hidden>Hapus profil ini</button>
     <h2 class="sect">Pilih kelas</h2>
     <div id="grades" class="grades"></div>
     <div id="vrow" class="vrow" hidden></div>
@@ -965,8 +986,40 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
     get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   };
-  let name = store.get('jh.name', '');
-  let best = store.get('jh.best', {});
+  /* ---- profil anak ---- */
+  const AVC = ['#FFE08A', '#FFC2D1', '#BFEBD3', '#D9CCFF', '#FFD3B0', '#BFE3FF', '#FFC2D1', '#BFEBD3'];
+  const INK = '#2b2438';
+  function avatar(i) {
+    const sk = ['#F6D2AE', '#E9B98A', '#D9A173', '#F6D2AE', '#E9B98A', '#D9A173', '#F6D2AE', '#E9B98A'][i];
+    const hr = ['#2b2438', '#6b3f2a', '#2b2438', '#5a3523', '#2b2438', '#2b2438', '', ''][i];
+    const st = 'stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"';
+    let back = '', front = '', fr = 26, cy = 55, shirt = ['#FF8FA8', '#7FC8F8', '#FFC83D', '#8EDBB0', '#B79CFF', '#FF8FA8', '#F59BB5', '#4FB8A8'][i];
+    const fringe = '<path d="M24 52Q22 22 50 22Q78 22 76 52Q62 38 50 40Q38 38 24 52Z" fill="' + hr + '" ' + st + '/>';
+    if (i === 0) { back = '<circle cx="19" cy="64" r="11" fill="' + hr + '" ' + st + '/><circle cx="81" cy="64" r="11" fill="' + hr + '" ' + st + '/>'; front = fringe + '<circle cx="24" cy="51" r="4" fill="#FF5C7A" ' + st + '/><circle cx="76" cy="51" r="4" fill="#FF5C7A" ' + st + '/>'; }
+    if (i === 1) { back = '<circle cx="50" cy="15" r="11" fill="' + hr + '" ' + st + '/>'; front = fringe + '<path d="M40 20L50 26L60 20L58 30L50 26L42 30Z" fill="#FF5C7A" ' + st + '/>'; }
+    if (i === 2) { back = '<path d="M20 52Q20 18 50 18Q80 18 80 52L82 92L18 92Z" fill="' + hr + '" ' + st + '/>'; front = fringe; }
+    if (i === 3) { back = '<rect x="20" y="22" width="60" height="50" rx="22" fill="' + hr + '" ' + st + '/>'; front = '<path d="M24 52Q22 22 50 22Q78 22 76 52Q56 44 44 34Q34 46 24 52Z" fill="' + hr + '" ' + st + '/><path d="M66 24L80 18L78 34Z" fill="#E8344E" ' + st + '/><path d="M66 24L58 14L56 30Z" fill="#E8344E" ' + st + '/><circle cx="66" cy="24" r="3.5" fill="#FF8FA8" ' + st + '/>'; }
+    if (i === 4) { back = [[24, 30], [38, 20], [50, 17], [62, 20], [76, 30], [20, 46], [80, 46], [18, 60], [82, 60]].map(p => '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="11" fill="' + hr + '" ' + st + '/>').join(''); front = '<path d="M26 50Q28 30 50 30Q72 30 74 50Q62 40 50 42Q38 40 26 50Z" fill="' + hr + '"/>'; }
+    if (i === 5) { back = '<path d="M20 56Q18 20 50 20Q82 20 80 56L80 64L72 64L72 50L28 50L28 64L20 64Z" fill="' + hr + '" ' + st + '/><ellipse cx="17" cy="72" rx="7" ry="9" fill="' + hr + '" ' + st + '/><ellipse cx="15" cy="88" rx="7" ry="9" fill="' + hr + '" ' + st + '/><ellipse cx="83" cy="72" rx="7" ry="9" fill="' + hr + '" ' + st + '/><ellipse cx="85" cy="88" rx="7" ry="9" fill="' + hr + '" ' + st + '/>'; front = fringe + '<circle cx="17" cy="97" r="4" fill="#FFC83D" ' + st + '/><circle cx="83" cy="97" r="4" fill="#FFC83D" ' + st + '/>'; }
+    if (i >= 6) {
+      const hj = i === 6 ? '#FF8FA8' : '#35A89A'; fr = 23; cy = 57;
+      back = '<path d="M14 100Q14 80 50 76Q86 80 86 100Z" fill="' + hj + '" ' + st + '/><path d="M18 60Q16 18 50 17Q84 18 82 60Q84 92 50 96Q16 92 18 60Z" fill="' + hj + '" ' + st + '/>';
+      front = '<path d="M27 50Q50 32 73 50Q73 36 50 33Q27 36 27 50Z" fill="' + hj + '"/>' + (i === 6 ? '<circle cx="72" cy="40" r="5" fill="#FFC83D" ' + st + '/><circle cx="72" cy="40" r="1.8" fill="#fff"/>' : '<path d="M62 36l6-5 2 7 7 0-5 5 1 7-6-4-6 4 1-7-5-5 7 0z" fill="#FFE08A" ' + st + ' transform="translate(2 -3) scale(.8)"/>');
+    }
+    const body = i >= 6 ? '' : '<path d="M16 100Q18 82 50 80Q82 82 84 100Z" fill="' + shirt + '" ' + st + '/>';
+    const face = '<circle cx="50" cy="' + cy + '" r="' + fr + '" fill="' + sk + '" ' + st + '/>';
+    const eyes = '<circle cx="41" cy="' + (cy + 2) + '" r="3.4" fill="' + INK + '"/><circle cx="59" cy="' + (cy + 2) + '" r="3.4" fill="' + INK + '"/><circle cx="42.2" cy="' + (cy + 0.8) + '" r="1.1" fill="#fff"/><circle cx="60.2" cy="' + (cy + 0.8) + '" r="1.1" fill="#fff"/>';
+    const cheeks = '<ellipse cx="35" cy="' + (cy + 10) + '" rx="4.5" ry="3" fill="#FF8FA8" opacity=".7"/><ellipse cx="65" cy="' + (cy + 10) + '" rx="4.5" ry="3" fill="#FF8FA8" opacity=".7"/>';
+    const mouth = '<path d="M44 ' + (cy + 10) + 'Q50 ' + (cy + 17) + ' 56 ' + (cy + 10) + '" fill="none" stroke="' + INK + '" stroke-width="2.6" stroke-linecap="round"/>';
+    return '<svg viewBox="0 0 100 100" role="img" aria-hidden="true"><defs><clipPath id="c' + i + '"><circle cx="50" cy="50" r="49"/></clipPath></defs><circle cx="50" cy="50" r="49" fill="' + AVC[i] + '"/><g clip-path="url(#c' + i + ')">' + back + body + face + front + eyes + cheeks + mouth + '</g><circle cx="50" cy="50" r="48.5" fill="none" stroke="' + INK + '" stroke-width="3"/></svg>';
+  }
+  let profiles = store.get('jh.profiles', null);
+  if (!Array.isArray(profiles) || !profiles.length) profiles = [{ id: 1, name: store.get('jh.name', ''), av: 0, best: store.get('jh.best', {}) }];
+  let curId = store.get('jh.cur', profiles[0].id);
+  const P = () => profiles.find(p => p.id === curId) || (curId = profiles[0].id, profiles[0]);
+  const saveP = () => { store.set('jh.profiles', profiles); store.set('jh.cur', curId); };
+  let name = P().name;
+  let best = P().best;
   let muted = store.get('jh.mute', false);
 
   /* ---- suara ---- */
@@ -1122,6 +1175,10 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
       return '<button class="grade' + (g === 0 ? ' wide' : '') + '" data-g="' + g + '"><span class="gn">' + (g === 0 ? 'TK' : g) + '</span><span class="gl">' + (g === 0 ? 'Kelompok B' : 'Kelas') + '</span><span class="gi">' + GRADE_INFO[g] + '</span><span class="gs">' + starRow(b ? b.s : 0) + (b ? '<span class="gb num">' + b.n + '</span>' : '') + '</span></button>';
     }).join('');
     $('#nm').value = name;
+    $('#profs').innerHTML = profiles.map(p => '<button class="prof' + (p.id === curId ? ' on' : '') + '" data-p="' + p.id + '" type="button">' + avatar(p.av) + '<span>' + (p.name || 'Baru') + '</span></button>').join('') + (profiles.length < 5 ? '<button class="prof add" id="addp" type="button"><b>+</b><span>Tambah</span></button>' : '');
+    $('#avbtn').innerHTML = avatar(P().av) + '<i>✎</i>';
+    $('#avpick').innerHTML = [0, 1, 2, 3, 4, 5, 6, 7].map(i => '<button type="button" data-a="' + i + '" class="' + (i === P().av ? 'on' : '') + '" aria-label="Gambar ' + (i + 1) + '">' + avatar(i) + '</button>').join('');
+    $('#delp').hidden = profiles.length < 2; $('#delp').textContent = 'Hapus profil ini';
     $('#snd').textContent = 'Efek suara: ' + (muted ? 'mati' : 'nyala');
     $('#snd').setAttribute('aria-pressed', String(!muted));
     $('#vo').hidden = !canSpeak;
@@ -1129,7 +1186,28 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
     $('#vo').setAttribute('aria-pressed', String(vo));
     renderVoices();
   }
-  $('#nm').addEventListener('input', e => { name = e.target.value.trim(); store.set('jh.name', name); });
+  function pickProfile(id) { curId = id; name = P().name; best = P().best; saveP(); $('#avpick').hidden = true; buildHome(); }
+  $('#nm').addEventListener('input', e => {
+    name = e.target.value.trim(); P().name = name; saveP();
+    const on = $('#profs .prof.on span'); if (on) on.textContent = name || 'Baru';
+  });
+  $('#profs').addEventListener('click', e => {
+    if (e.target.closest('#addp')) {
+      const used = profiles.map(p => p.av), av = [0, 1, 2, 3, 4, 5, 6, 7].find(i => !used.includes(i)) || 0;
+      const id = Math.max(...profiles.map(p => p.id)) + 1;
+      profiles.push({ id, name: '', av, best: {} }); pickProfile(id); $('#nm').focus(); return;
+    }
+    const b = e.target.closest('.prof[data-p]'); if (b) pickProfile(+b.dataset.p);
+  });
+  $('#avbtn').addEventListener('click', () => { $('#avpick').hidden = !$('#avpick').hidden; });
+  $('#avpick').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b) return; P().av = +b.dataset.a; saveP(); $('#avpick').hidden = true; buildHome(); });
+  let delT = 0;
+  $('#delp').addEventListener('click', () => {
+    const d = $('#delp');
+    if (!delT) { d.textContent = 'Yakin? Nilai profil ini ikut terhapus. Ketuk lagi.'; delT = setTimeout(() => { delT = 0; d.textContent = 'Hapus profil ini'; }, 4000); return; }
+    clearTimeout(delT); delT = 0;
+    profiles = profiles.filter(p => p.id !== curId); pickProfile(profiles[0].id);
+  });
   $('#snd').addEventListener('click', () => { muted = !muted; store.set('jh.mute', muted); buildHome(); if (!muted) sfx('ok'); });
   $('#vrow').addEventListener('change', e => { if (e.target.id === 'vsel') { voiceName = e.target.value; store.set('jh.voice', voiceName); pickVoice(); say('Halo, ayo berhitung bersama.'); } });
   $('#vo').addEventListener('click', () => { vo = !vo; store.set('jh.vo', vo); buildHome(); if (vo) say('Penjelasan akan dibacakan.'); else hush(); });
@@ -1246,7 +1324,7 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
     const nilai = Math.round(S.ok * 100 / S.n), st = starsOf(nilai), prev = best[S.grade];
     const rec = !!prev && nilai > prev.n;
     if (!prev || nilai > prev.n) best[S.grade] = { n: nilai, s: st };
-    store.set('jh.best', best);
+    saveP();
     const msg = ['Ayo coba lagi', 'Bagus, terus berlatih', 'Hebat', 'Luar biasa'][st];
     $('#rmsg').textContent = msg + (name ? ', ' + name : '') + '!';
     $('#rnum').textContent = nilai;
