@@ -221,6 +221,16 @@ h1,h2,h3,p{margin:0}
 .dlg h3{font:800 26px/1.1 var(--f-disp)}
 .dlg p{color:var(--muted)}
 
+/* TK B */
+.qsay{position:absolute;right:8px;bottom:8px;width:44px;height:44px}.qcard:has(.qsay:not([hidden])){padding-bottom:58px}
+.pg{display:block;width:100%;height:auto}
+.vis .pg{max-width:300px;max-height:190px}.vis.sm .pg{max-width:150px}
+.ch .pg{max-width:150px;max-height:92px}
+.choices.pic .ch{min-height:116px}
+.choices.big .ch{min-height:96px;font-size:clamp(40px,12vw,56px)}
+.choices.words .ch{font-size:clamp(20px,5.6vw,24px)}
+.sheet b .pg{display:inline-block;width:84px;max-height:56px;vertical-align:middle}
+.grade.wide{grid-column:1/-1}
 /* gambar soal */
 .vis{width:100%;display:flex;justify-content:center}
 .vis svg{display:block;width:100%;max-width:340px;height:auto;overflow:visible}
@@ -291,7 +301,7 @@ h1,h2,h3,p{margin:0}
     </div>
     <div class="stage">
       <div class="qmeta"><div class="qm"><b id="qhead"></b><span id="qno"></span></div><div id="mPlay" aria-hidden="true"></div></div>
-      <div class="qcard"><span id="qpill" class="mpill" hidden></span><div id="vis"></div><div id="qtext" class="qtext"></div><div id="qhint" class="qhint" hidden></div></div>
+      <div class="qcard"><span id="qpill" class="mpill" hidden></span><button id="qsay" class="iconbtn qsay" type="button" aria-label="Dengarkan soal" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12"/></svg></button><div id="vis"></div><div id="qtext" class="qtext"></div><div id="qhint" class="qhint" hidden></div></div>
       <div id="answer"></div>
     </div>
     <div id="sheet" class="sheet" role="status" aria-live="assertive" hidden>
@@ -344,16 +354,16 @@ function numOpts(ans, o) {
   const fmt = o.fmt || num, min = o.min === undefined ? 0 : o.min;
   const s = o.spread || Math.max(1, Math.round(Math.abs(ans) * 0.1));
   const pool = shuffle([ans + 1, ans - 1, ans + 2, ans - 2, ans + 10, ans - 10, ans + s, ans - s, ans + 2 * s, ans - 2 * s].concat(o.extra || [])
-    .filter(x => x !== ans && x >= min && Number.isFinite(x)));
+    .filter(x => x !== ans && x >= min && (o.max === undefined || x <= o.max) && Number.isFinite(x)));
   const out = [ans];
   for (const x of pool) { if (out.length >= 4) break; if (!out.includes(x)) out.push(x); }
-  let k = 3; while (out.length < 4) { const x = ans + k; if (x >= min && !out.includes(x)) out.push(x); k++; }
+  let k = 3; while (out.length < 4 && k < 60) { for (const x of [ans + k, ans - k]) if (out.length < 4 && x >= min && (o.max === undefined || x <= o.max) && !out.includes(x)) out.push(x); k++; }
   return { choices: shuffle(out).map(fmt), correct: fmt(ans) };
 }
 function numQ(q, ans, ex, o) {
   o = o || {};
   const f = o.fmt || (n => num(n) + (o.unit ? ' ' + o.unit : ''));
-  const oo = numOpts(ans, { fmt: f, min: o.min, extra: o.extra, spread: o.spread });
+  const oo = numOpts(ans, { fmt: f, min: o.min, max: o.max, extra: o.extra, spread: o.spread });
   return { q, kind: 'num', ans, show: f(ans), ex: ex || '', choices: oo.choices, correct: oo.correct, unit: o.unit || '', prefix: o.prefix || '', neg: !!o.neg, decimal: !!o.decimal };
 }
 function chQ(q, correct, wrongs, ex) {
@@ -621,7 +631,7 @@ function buildRound(grade, topicId, n) {
     if (!bag.length) bag = shuffle(gens);
     const g = bag.pop(), q = g.fn();
     if (!q) continue;
-    const key = q.q + JSON.stringify(q.vis || '');
+    const key = q.q + JSON.stringify(q.vis || '') + (q.kind === 'choice' ? JSON.stringify(q.choices) : '');
     if (seen.has(key)) continue;
     seen.add(key); q.topic = g.name; q.method = g.method || ''; q.cam = camb.includes(g); out.push(q);
   }
@@ -822,11 +832,134 @@ GC[6] = [
   } }
 ];
 
+/* TK B (usia 5-6 tahun): soal bergambar, tanpa perlu membaca.
+   Soal dibacakan suara, jawaban dipilih dengan menyentuh gambar atau angka besar. */
+const OBJNAMES = ['apel', 'bintang', 'balon', 'ikan'];
+const SHAPES = ['lingkaran', 'persegi', 'segitiga', 'persegi panjang'];
+const COLS = ['blue', 'red', 'yellow', 'green'];
+const colVar = c => 'var(--' + c + ')';
+
+function iconBody(o) {
+  if (o === 'apel') return '<path d="M20 11 Q19 5 24 3" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/><ellipse cx="27" cy="7" rx="6" ry="3" transform="rotate(-25 27 7)" fill="var(--green)" stroke="var(--ink)" stroke-width="2"/><circle cx="20" cy="24" r="13" fill="var(--red)" stroke="var(--ink)" stroke-width="2.5"/><path d="M13 20 Q14 16 18 15" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>';
+  if (o === 'bintang') return '<path d="M20 3 L25 14.5 L37.5 15.8 L28.2 24.2 L30.8 36.5 L20 30.2 L9.2 36.5 L11.8 24.2 L2.5 15.8 L15 14.5 Z" fill="var(--yellow)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/>';
+  if (o === 'balon') return '<path d="M20 31 Q16 35 20 38" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/><ellipse cx="20" cy="15" rx="11.5" ry="13.5" fill="var(--blue)" stroke="var(--ink)" stroke-width="2.5"/><path d="M17 28 L23 28 L20 32 Z" fill="var(--blue)" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/><path d="M13 10 Q14 6 18 5" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>';
+  return '<path d="M30 20 L38 12 L38 28 Z" fill="var(--pink)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="17" cy="20" rx="14" ry="9.5" fill="var(--pink)" stroke="var(--ink)" stroke-width="2.5"/><circle cx="10" cy="18" r="2.2" fill="var(--ink)"/><path d="M19 14 Q22 20 19 26" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" opacity=".6"/>';
+}
+/* tata letak baris berisi 5 supaya mudah dihitung; cross = jumlah terakhir yang dicoret */
+function objsLayout(o, n, cross, x0) {
+  const per = n <= 5 ? n : 5, rows = Math.ceil(n / 5), cell = 44; let b = '';
+  for (let i = 0; i < n; i++) {
+    const x = (x0 || 0) + (i % 5) * cell + 2, y = Math.floor(i / 5) * cell + 2;
+    b += '<g transform="translate(' + x + ' ' + y + ')">' + iconBody(o) + (i >= n - (cross || 0) ? '<path d="M3 3L37 37M37 3L3 37" stroke="var(--red)" stroke-width="4.5" stroke-linecap="round"/>' : '') + '</g>';
+  }
+  return { w: per * cell + 2, h: rows * cell + 2, body: b };
+}
+function objsSVG(o, n, cross) {
+  const L = objsLayout(o, n, cross);
+  return '<svg class="pg" viewBox="0 0 ' + L.w + ' ' + L.h + '" role="img" aria-label="' + n + ' ' + o + '">' + L.body + '</svg>';
+}
+function plusSVG(o, a, b) {
+  const A = objsLayout(o, a, 0, 0), x2 = A.w + 34, B = objsLayout(o, b, 0, x2), h = Math.max(A.h, B.h), w = x2 + B.w;
+  return '<svg class="pg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + a + ' ' + o + ' ditambah ' + b + ' ' + o + '">' + A.body +
+    '<path d="M' + (A.w + 17) + ' ' + (h / 2 - 11) + ' v22 M' + (A.w + 6) + ' ' + h / 2 + ' h22" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/>' + B.body + '</svg>';
+}
+function shapeInner(s, c, ox, size) {
+  const f = 'fill="' + colVar(c) + '" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"', k = (size || 80) / 80;
+  const g = body => '<g transform="translate(' + (ox || 0) + ' 0) scale(' + k + ')">' + body + '</g>';
+  if (s === 'lingkaran') return g('<circle cx="40" cy="40" r="32" ' + f + '/>');
+  if (s === 'persegi') return g('<rect x="10" y="10" width="60" height="60" rx="3" ' + f + '/>');
+  if (s === 'segitiga') return g('<path d="M40 8 L72 68 L8 68 Z" ' + f + '/>');
+  return g('<rect x="3" y="22" width="74" height="38" rx="3" ' + f + '/>');
+}
+function shapeSVG(s, c) { return '<svg class="pg" viewBox="0 0 80 80" role="img" aria-label="' + s + '">' + shapeInner(s, c, 0, 80) + '</svg>'; }
+function patternSVG(items, ask) {
+  const w = (items.length + (ask ? 1 : 0)) * 58 + 4; let b = '';
+  items.forEach((it, i) => { b += shapeInner(it[0], it[1], 2 + i * 58, 54); });
+  if (ask) b += '<rect x="' + (4 + items.length * 58) + '" y="4" width="46" height="46" rx="8" fill="var(--soft)" stroke="var(--line)" stroke-width="3" stroke-dasharray="6 5"/><text x="' + (27 + items.length * 58) + '" y="30" text-anchor="middle" dominant-baseline="central" style="font:800 28px var(--f-disp);fill:var(--muted)">?</text>';
+  return '<svg class="pg" viewBox="0 0 ' + w + ' 56" role="img" aria-label="Pola gambar">' + b + '</svg>';
+}
+function sizeSVG(kind, v, c) {
+  if (kind === 'panjang') return '<svg class="pg" viewBox="0 0 150 34" role="img" aria-label="pensil"><rect x="5" y="9" width="' + v + '" height="16" rx="8" fill="' + colVar(c) + '" stroke="var(--ink)" stroke-width="3"/></svg>';
+  return '<svg class="pg" viewBox="0 0 100 100" role="img" aria-label="lingkaran"><circle cx="50" cy="50" r="' + v + '" fill="' + colVar(c) + '" stroke="var(--ink)" stroke-width="3"/></svg>';
+}
+
+G[0] = [
+  { id: 'k-hitung', name: 'Menghitung benda', fn() {
+    const o = pick(OBJNAMES), n = Math.random() < 0.8 ? rnd(1, 10) : rnd(11, 20);
+    const q = numQ('Ada berapa ' + o + '?', n, 'Hitung satu per satu. Ada ' + n + ' ' + o + '.', { min: 1, max: 20, spread: 1 });
+    q.vis = { type: 'objs', obj: o, n }; q.say = 'Ada berapa ' + o + '?'; q.ch = 'big'; return q;
+  } },
+  { id: 'k-angka', name: 'Mengenal angka', fn() {
+    const o = pick(OBJNAMES), n = rnd(2, 10), opts = [];
+    for (const d of shuffle([-2, -1, 1, 2])) { const x = n + d; if (x >= 1 && x <= 10) opts.push(x); }
+    const q = chQ('Mana yang jumlahnya ' + n + '?', objsSVG(o, n), opts.slice(0, 3).map(x => objsSVG(o, x)), 'Hitung benda di setiap kotak. Yang jumlahnya ' + n + ' adalah gambar ini.');
+    q.ch = 'pic'; q.say = 'Mana yang jumlahnya ' + n + '?'; q.ansSay = 'yang jumlahnya ' + n; return q;
+  } },
+  { id: 'k-banyak', name: 'Lebih banyak, lebih sedikit', fn() {
+    const o = pick(OBJNAMES), a = rnd(1, 9); let b = rnd(1, 10); while (b === a) b = rnd(1, 10);
+    const more = Math.random() < 0.5, ans = more ? Math.max(a, b) : Math.min(a, b), oth = a + b - ans, w = more ? 'banyak' : 'sedikit';
+    const q = chQ('Mana yang lebih ' + w + '?', objsSVG(o, ans), [objsSVG(o, oth)], 'Bandingkan jumlahnya. ' + ans + ' ' + (more ? 'lebih banyak' : 'lebih sedikit') + ' dari ' + oth + '.');
+    q.ch = 'pic'; q.say = 'Mana yang lebih ' + w + '?'; q.ansSay = 'yang berjumlah ' + ans; return q;
+  } },
+  { id: 'k-urut', name: 'Urutan angka', fn() {
+    if (Math.random() < 0.6) {
+      const s = rnd(1, 7), seq = [s, s + 1, s + 2, s + 3], h = rnd(1, 2);
+      const q = numQ(seq.map((x, i) => i === h ? '?' : x).join(', '), seq[h], 'Urutannya ' + seq.join(', ') + '. Angka yang hilang adalah ' + seq[h] + '.', { min: 1, max: 10, spread: 1 });
+      q.hint = 'Lengkapi urutan angkanya.'; q.say = 'Lengkapi urutan angka. ' + seq.map((x, i) => i === h ? 'berapa' : x).join(', '); q.ch = 'big'; return q;
+    }
+    const after = Math.random() < 0.5, n = after ? rnd(1, 9) : rnd(2, 10);
+    const q = numQ('Angka ' + (after ? 'sesudah' : 'sebelum') + ' ' + n + ' adalah ...', after ? n + 1 : n - 1, (after ? n + ' ditambah 1 sama dengan ' + (n + 1) : n + ' dikurang 1 sama dengan ' + (n - 1)) + '.', { min: 1, max: 10, spread: 1 });
+    q.say = 'Angka ' + (after ? 'sesudah ' : 'sebelum ') + n + ' adalah berapa?'; q.ch = 'big'; return q;
+  } },
+  { id: 'k-tambah', name: 'Menambah benda', fn() {
+    const o = pick(OBJNAMES), a = rnd(1, 6), b = rnd(1, Math.min(6, 10 - a));
+    const q = numQ('Berapa seluruhnya?', a + b, a + ' ' + o + ' ditambah ' + b + ' ' + o + ' sama dengan ' + (a + b) + '.', { min: 1, max: 10, spread: 1 });
+    q.vis = { type: 'plus', obj: o, a, b }; q.say = 'Ada ' + a + ' ' + o + ', ditambah ' + b + ' ' + o + '. Berapa seluruhnya?'; q.ch = 'big'; return q;
+  } },
+  { id: 'k-kurang', name: 'Mengurangi benda', fn() {
+    const o = pick(OBJNAMES), t = rnd(3, 10), k = rnd(1, Math.min(5, t - 1));
+    const q = numQ('Berapa yang tersisa?', t - k, 'Ada ' + t + ', yang dicoret ' + k + '. ' + t + ' dikurang ' + k + ' sama dengan ' + (t - k) + '.', { min: 1, max: 10, spread: 1 });
+    q.vis = { type: 'objs', obj: o, n: t, cross: k }; q.say = 'Ada ' + t + ' ' + o + '. ' + k + ' ' + o + ' dicoret. Berapa yang tersisa?'; q.ch = 'big'; return q;
+  } },
+  { id: 'k-bentuk', name: 'Bentuk', fn() {
+    const c = pick(COLS), t = pick(SHAPES);
+    if (Math.random() < 0.5) {
+      const q = chQ('Mana yang berbentuk ' + t + '?', shapeSVG(t, c), SHAPES.filter(s => s !== t).map(s => shapeSVG(s, c)), 'Ini bentuk ' + t + '.');
+      q.ch = 'pic'; q.say = 'Mana yang berbentuk ' + t + '?'; q.ansSay = 'yang berbentuk ' + t; return q;
+    }
+    const q = chQ('Bentuk apa ini?', t, SHAPES.filter(s => s !== t), 'Ini bentuk ' + t + '.');
+    q.vis = { type: 'shape', s: t, c }; q.say = 'Bentuk apa ini?'; q.ch = 'words'; return q;
+  } },
+  { id: 'k-pola', name: 'Pola', fn() {
+    const pool = shuffle([['lingkaran', 'blue'], ['persegi', 'red'], ['segitiga', 'yellow'], ['lingkaran', 'green']]);
+    const kind = pick(['AB', 'AAB', 'ABC']);
+    const unit = kind === 'AB' ? [pool[0], pool[1]] : kind === 'AAB' ? [pool[0], pool[0], pool[1]] : [pool[0], pool[1], pool[2]];
+    const reps = kind === 'AB' ? 3 : 2, k = rnd(1, unit.length - 1);
+    let seq = []; for (let r = 0; r < reps; r++) seq = seq.concat(unit); seq = seq.concat(unit.slice(0, k));
+    const nx = unit[k], q = chQ('Gambar mana yang melanjutkan pola?', shapeSVG(nx[0], nx[1]), pool.filter(it => it !== nx && !(it[0] === nx[0] && it[1] === nx[1])).map(it => shapeSVG(it[0], it[1])), 'Pola ini berulang. Yang berikutnya adalah ' + nx[0] + ' ' + { blue: 'biru', red: 'merah', yellow: 'kuning', green: 'hijau' }[nx[1]] + '.');
+    q.vis = { type: 'pattern', items: seq, ask: true }; q.ch = 'pic'; q.say = 'Gambar mana yang melanjutkan pola?'; q.ansSay = 'yang ini'; return q;
+  } },
+  { id: 'k-ukuran', name: 'Panjang dan besar', fn() {
+    const kind = pick(['panjang', 'besar']), big = Math.random() < 0.5, c = pick(COLS);
+    const lo = kind === 'panjang' ? rnd(30, 60) : rnd(14, 24), hi = lo + (kind === 'panjang' ? rnd(35, 70) : rnd(14, 22));
+    const word = kind === 'panjang' ? (big ? 'panjang' : 'pendek') : (big ? 'besar' : 'kecil'), ans = big ? hi : lo, oth = big ? lo : hi;
+    const q = chQ('Mana yang lebih ' + word + '?', sizeSVG(kind, ans, c), [sizeSVG(kind, oth, c)], 'Bandingkan keduanya. Yang lebih ' + word + ' adalah gambar ini.');
+    q.ch = 'pic'; q.say = 'Mana yang lebih ' + word + '?'; q.ansSay = 'yang ini'; return q;
+  } },
+  { id: 'k-besar', name: 'Angka lebih besar', fn() {
+    const a = rnd(1, 9); let b = rnd(1, 10); while (b === a) b = rnd(1, 10);
+    const big = Math.random() < 0.5, ans = big ? Math.max(a, b) : Math.min(a, b), oth = a + b - ans, w = big ? 'besar' : 'kecil';
+    const q = chQ('Mana angka yang lebih ' + w + '?', String(ans), [String(oth)], ans + ' lebih ' + w + ' dari ' + oth + '.');
+    q.say = 'Mana angka yang lebih ' + w + '?'; q.ch = 'big'; return q;
+  } }
+];
+GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
+
 
 (function () {
   const $ = s => document.querySelector(s);
-  const N = 10;
-  const S = { grade: 1, topic: null, qs: [], i: 0, ok: 0, streak: 0, top: 0, wrong: [], locked: true, ent: '', timer: 0 };
+  const gname = g => g === 0 ? 'TK B' : 'Kelas ' + g;
+  const S = { n: 10, grade: 1, topic: null, qs: [], i: 0, ok: 0, streak: 0, top: 0, wrong: [], locked: true, ent: '', timer: 0 };
 
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -975,6 +1108,8 @@ GC[6] = [
     if (v.type === 'nline') h = vNline(v); else if (v.type === 'bond') h = vBond(v); else if (v.type === 'bar') h = vBar(v);
     else if (v.type === 'fbar') h = vFbar(v); else if (v.type === 'cmpbar') h = vCmp(v); else if (v.type === 'units') h = vUnits(v);
     else if (v.type === 'chart') h = vChart(v); else if (v.type === 'pv') h = vPv(v);
+    else if (v.type === 'objs') h = objsSVG(v.obj, v.n, v.cross); else if (v.type === 'plus') h = plusSVG(v.obj, v.a, v.b);
+    else if (v.type === 'shape') h = shapeSVG(v.s, v.c); else if (v.type === 'pattern') h = patternSVG(v.items, v.ask);
     else if (v.type === 'array') h = '<div class="arr" style="--c:' + v.c + '" role="img" aria-label="' + v.r * v.c + ' titik">' + '<i></i>'.repeat(v.r * v.c) + '</div>';
     else if (v.type === 'hgrid') h = '<div class="hg" role="img" aria-label="' + v.n + ' dari 100 kotak berwarna">' + Array.from({ length: 100 }, (_, i) => '<i' + (i < v.n ? ' class="on"' : '') + '></i>').join('') + '</div>';
     return '<div class="vis' + (small ? ' sm' : '') + '">' + h + '</div>';
@@ -982,9 +1117,9 @@ GC[6] = [
 
   /* ---- beranda ---- */
   function buildHome() {
-    $('#grades').innerHTML = [1, 2, 3, 4, 5, 6].map(g => {
+    $('#grades').innerHTML = [0, 1, 2, 3, 4, 5, 6].map(g => {
       const b = best[g];
-      return '<button class="grade" data-g="' + g + '"><span class="gn">' + g + '</span><span class="gl">Kelas</span><span class="gi">' + GRADE_INFO[g] + '</span><span class="gs">' + starRow(b ? b.s : 0) + (b ? '<span class="gb num">' + b.n + '</span>' : '') + '</span></button>';
+      return '<button class="grade' + (g === 0 ? ' wide' : '') + '" data-g="' + g + '"><span class="gn">' + (g === 0 ? 'TK' : g) + '</span><span class="gl">' + (g === 0 ? 'Kelompok B' : 'Kelas') + '</span><span class="gi">' + GRADE_INFO[g] + '</span><span class="gs">' + starRow(b ? b.s : 0) + (b ? '<span class="gb num">' + b.n + '</span>' : '') + '</span></button>';
     }).join('');
     $('#nm').value = name;
     $('#snd').textContent = 'Efek suara: ' + (muted ? 'mati' : 'nyala');
@@ -1005,12 +1140,12 @@ GC[6] = [
 
   /* ---- pilih topik ---- */
   function buildTopics() {
-    $('#thead').textContent = 'Kelas ' + S.grade;
+    $('#thead').textContent = gname(S.grade);
     $('#tlist').innerHTML = '<button class="topic all" data-t=""><span>Semua topik</span><small>campur</small></button>' +
       G[S.grade].map(g => '<button class="topic" data-t="' + g.id + '"><span>' + g.name + '</span></button>').join('') +
-      '<h2 class="camhead">Gaya Cambridge &amp; Singapura</h2><p class="camnote">Belajar dengan gambar: model bar, garis bilangan, ikatan bilangan, dan cari kesalahan.</p>' +
+      ((GC[S.grade] || []).length ? '<h2 class="camhead">Gaya Cambridge &amp; Singapura</h2><p class="camnote">Belajar dengan gambar: model bar, garis bilangan, ikatan bilangan, dan cari kesalahan.</p>' +
       '<button class="topic cam" data-t="__c"><span>Semua gaya Cambridge</span><small>campur</small></button>' +
-      GC[S.grade].map(g => '<button class="topic" data-t="' + g.id + '"><span>' + g.name + '</span><small>' + g.method + '</small></button>').join('');
+      GC[S.grade].map(g => '<button class="topic" data-t="' + g.id + '"><span>' + g.name + '</span><small>' + g.method + '</small></button>').join('') : '');
   }
   $('#tlist').addEventListener('click', e => { const b = e.target.closest('.topic'); if (b) start(S.grade, b.dataset.t || null); });
   $('#tback').addEventListener('click', () => { buildHome(); show('home'); });
@@ -1019,24 +1154,26 @@ GC[6] = [
   const cur = () => S.qs[S.i];
   function start(grade, topic) {
     clearTimeout(S.timer); hush();
-    Object.assign(S, { grade, topic, qs: buildRound(grade, topic, N), i: 0, ok: 0, streak: 0, top: 0, wrong: [], locked: true, ent: '' });
-    $('#track').innerHTML = '<i class="seg"></i>'.repeat(N);
+    const n = grade === 0 ? 8 : 10;
+    Object.assign(S, { n, grade, topic, qs: buildRound(grade, topic, n), i: 0, ok: 0, streak: 0, top: 0, wrong: [], locked: true, ent: '' });
+    $('#track').innerHTML = '<i class="seg"></i>'.repeat(S.n);
     $('#cnt').textContent = '\u2713 0';
     show('play'); renderQ();
   }
   function renderQ() {
     const q = cur(); S.locked = false; S.ent = '';
-    $('#qhead').textContent = 'Kelas ' + S.grade + ' · ' + q.topic;
-    $('#qno').textContent = 'Soal ' + (S.i + 1) + ' dari ' + N;
+    $('#qhead').textContent = gname(S.grade) + ' · ' + q.topic;
+    $('#qno').textContent = 'Soal ' + (S.i + 1) + ' dari ' + S.n;
     const qt = $('#qtext'); qt.innerHTML = q.q; qt.className = 'qtext' + (plain(q.q).length > 48 ? ' long' : '');
     $('#vis').innerHTML = visHTML(q.vis);
     const pill = $('#qpill'); pill.hidden = !q.cam; pill.textContent = q.cam ? q.method : '';
     const hn = $('#qhint'); hn.hidden = !q.hint; hn.textContent = q.hint || '';
+    $('#qsay').hidden = !canSpeak || S.grade > 2;
     document.querySelectorAll('.seg').forEach((s, k) => { s.classList.toggle('cur', k === S.i); });
     $('#sheet').hidden = true; hush();
     face('think');
     if (q.kind === 'choice' || S.grade <= 3) {
-      $('#answer').innerHTML = '<div class="choices">' + q.choices.map((c, i) => '<button class="ch" data-i="' + i + '"><span class="k">' + (i + 1) + '</span><span>' + c + '</span></button>').join('') + '</div>';
+      $('#answer').innerHTML = '<div class="choices ' + (q.ch || '') + '">' + q.choices.map((c, i) => '<button class="ch" data-i="' + i + '"><span class="k">' + (i + 1) + '</span><span>' + c + '</span></button>').join('') + '</div>';
     } else {
       const alt = q.neg ? '−' : (q.decimal ? ',' : '');
       $('#answer').innerHTML = '<div class="entry" id="entry">' + (q.prefix ? '<span class="pre">' + q.prefix + '</span>' : '') + '<output id="ev" class="ev"></output>' + (q.unit ? '<span class="unit">' + q.unit + '</span>' : '') + '</div>' +
@@ -1045,7 +1182,9 @@ GC[6] = [
         '<button class="pk" data-k="0">0</button><button class="pk alt" data-k="back" aria-label="Hapus"><svg viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M12 9.5l5 5M17 9.5l-5 5"/></svg></button></div>' +
         '<button id="chk" class="btn go" type="button">Periksa</button>';
     }
+    if (S.grade === 0 && vo && canSpeak) setTimeout(() => { if (!S.locked && cur() === q) say(toSpeech(q.say || plain(q.q))); }, 350);
   }
+  $('#qsay').addEventListener('click', () => { const q = cur(); if (q) say(toSpeech(q.say || plain(q.q))); });
   $('#answer').addEventListener('click', e => {
     const c = e.target.closest('.ch'), k = e.target.closest('.pk'), g = e.target.closest('#chk');
     if (c) pickChoice(+c.dataset.i); else if (k) key(k.dataset.k); else if (g) check();
@@ -1082,27 +1221,29 @@ GC[6] = [
     if (chs.length) chs.forEach((b, k) => { b.disabled = true; if (q.choices[k] === q.correct) b.classList.add('right'); else if (k === idx) b.classList.add('bad'); });
     else { const en = $('#entry'); en.classList.add(ok ? 'right' : 'bad'); document.querySelectorAll('.pad,#chk').forEach(b => { b.hidden = true; }); }
     const sh = $('#sheet'); sh.className = 'sheet ' + (ok ? 'ok' : 'bad'); sh.hidden = false;
-    $('#sh').textContent = ok ? PRAISE[rnd(0, PRAISE.length - 1)] : 'Belum tepat';
+    const pr = PRAISE[rnd(0, PRAISE.length - 1)];
+    $('#sh').textContent = ok ? pr : (S.grade === 0 ? 'Hampir benar!' : 'Belum tepat');
+    if (ok && S.grade === 0 && vo) say(pr);
     $('#sp').innerHTML = ok ? (S.streak >= 3 ? 'Beruntun ' + S.streak + ' soal' : '') + '<span class="ex" id="sex" hidden>' + q.ex + '</span>' : 'Jawaban yang benar: <b>' + q.show + '</b><span class="ex" id="sex">' + q.ex + '</span>';
     $('#say').hidden = !canSpeak;
-    if (!ok && vo) say(toSpeech('Belum tepat. Jawabannya ' + q.show + '. ' + q.ex));
-    $('#next').textContent = S.i === N - 1 ? 'Lihat nilai' : 'Lanjut';
+    if (!ok && vo) say(toSpeech((S.grade === 0 ? 'Hampir benar. ' : 'Belum tepat. ') + 'Jawabannya ' + (q.ansSay || q.show) + '. ' + q.ex));
+    $('#next').textContent = S.i === S.n - 1 ? 'Lihat nilai' : 'Lanjut';
     sh.scrollIntoView({ block: 'nearest' });
     if (ok) { const at = S.i; clearTimeout(S.timer); S.timer = setTimeout(() => { if (S.i === at && S.locked) next(); }, 1300); }
   }
   function next() {
     clearTimeout(S.timer); hush(); if (!S.locked) return;
-    S.i++; if (S.i >= N) finish(); else renderQ();
+    S.i++; if (S.i >= S.n) finish(); else renderQ();
   }
   $('#next').addEventListener('click', next);
   $('#say').addEventListener('click', () => {
     const q = cur(); clearTimeout(S.timer); const ex = $('#sex'); if (ex) ex.hidden = false;
-    say(toSpeech('Soal. ' + q.q + '. ' + (q.desc ? q.desc + '. ' : '') + 'Jawabannya ' + q.show + '. ' + q.ex));
+    say(toSpeech('Soal. ' + (q.say || q.q) + '. ' + (q.desc ? q.desc + '. ' : '') + 'Jawabannya ' + (q.ansSay || q.show) + '. ' + q.ex));
   });
 
   /* ---- hasil ---- */
   function finish() {
-    const nilai = S.ok * 10, st = starsOf(nilai), prev = best[S.grade];
+    const nilai = Math.round(S.ok * 100 / S.n), st = starsOf(nilai), prev = best[S.grade];
     const rec = !!prev && nilai > prev.n;
     if (!prev || nilai > prev.n) best[S.grade] = { n: nilai, s: st };
     store.set('jh.best', best);
@@ -1110,7 +1251,7 @@ GC[6] = [
     $('#rmsg').textContent = msg + (name ? ', ' + name : '') + '!';
     $('#rnum').textContent = nilai;
     $('#rstars').innerHTML = starRow(st, 'big');
-    $('#rstat').innerHTML = '<span class="chip num">Benar ' + S.ok + ' dari ' + N + '</span>' + (S.top >= 3 ? '<span class="chip num">Beruntun ' + S.top + '</span>' : '') + (rec ? '<span class="chip rec">Nilai terbaik!</span>' : '');
+    $('#rstat').innerHTML = '<span class="chip num">Benar ' + S.ok + ' dari ' + S.n + '</span>' + (S.top >= 3 ? '<span class="chip num">Beruntun ' + S.top + '</span>' : '') + (rec ? '<span class="chip rec">Nilai terbaik!</span>' : '');
     const w = $('#rwrong'); w.hidden = !S.wrong.length;
     $('#rlist').innerHTML = S.wrong.map(x => '<li>' + visHTML(x.vis, true) + '<div class="wq' + (plain(x.q).length > 48 ? ' long' : '') + '">' + x.q + '</div><div class="wa">Jawaban: ' + x.show + '</div></li>').join('');
     sfx('done'); show('result');
