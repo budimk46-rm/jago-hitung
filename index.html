@@ -238,6 +238,25 @@ h1,h2,h3,p{margin:0}
 .dlg h3{font:800 26px/1.1 var(--f-disp)}
 .dlg p{color:var(--muted)}
 
+/* Bahasa Inggris */
+.em{font-size:56px;line-height:1.1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.bigem{font-size:92px;line-height:1.1;text-align:center;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.vis.sm .bigem{font-size:44px}
+.choices.pic .ch .em{font-size:60px}
+.grade .gn.eg{font-size:40px;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lc{background:var(--card);border:2px solid var(--line);border-radius:18px;box-shadow:0 4px 0 var(--shadow);padding:10px 6px 12px;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.lc:active,.lc.on{transform:translateY(3px);box-shadow:0 1px 0 var(--shadow);background:var(--yellow);color:#1d2a44}
+.lc .em{font-size:60px}
+.lc b{font:800 22px/1.15 var(--f-disp);text-align:center}
+.lc small{font-size:14px;color:var(--muted)}
+.lc.on small{color:#1d2a44}
+.lc i{position:absolute;right:8px;top:8px;width:20px;height:20px;opacity:.6}
+.lc i svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.grade[data-e] .gl{letter-spacing:0;font-size:12px;align-self:center}
+.grade[data-e] .gi{font-size:13px}
+.engnote{font-size:14px;color:var(--muted);margin-top:-6px}
+
 /* TK B */
 .qsay{position:absolute;right:8px;bottom:8px;width:44px;height:44px}.qcard:has(.qsay:not([hidden])){padding-bottom:58px}
 .pg{display:block;width:100%;height:auto}
@@ -304,6 +323,8 @@ h1,h2,h3,p{margin:0}
     <button id="delp" class="delp" type="button" hidden>Hapus profil ini</button>
     <h2 class="sect">Pilih kelas</h2>
     <div id="grades" class="grades"></div>
+    <h2 class="sect">Belajar Bahasa Inggris</h2>
+    <div id="engs" class="grades"></div>
     <div id="vrow" class="vrow" hidden></div>
     <div class="foot"><button id="snd" class="snd" type="button"></button><button id="vo" class="snd" type="button"></button></div>
   </section>
@@ -312,6 +333,14 @@ h1,h2,h3,p{margin:0}
     <div class="tophead"><button id="tback" class="iconbtn" aria-label="Kembali"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><h2 id="thead">Kelas 1</h2></div>
     <h2 class="sect">Mau latihan apa?</h2>
     <div id="tlist" class="tlist"></div>
+  </section>
+
+  <section id="learn" class="screen" aria-label="Belajar kata" hidden>
+    <div class="tophead"><button id="lback" class="iconbtn" aria-label="Kembali"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><h2 id="lhead"></h2></div>
+    <p class="engnote">Ketuk kartu untuk mendengar cara membacanya.</p>
+    <div id="evrow" class="vrow"></div>
+    <div id="lgrid" class="lgrid"></div>
+    <button id="lquiz" class="btn">Coba kuis</button>
   </section>
 
   <section id="play" class="screen" aria-label="Latihan" hidden>
@@ -976,10 +1005,54 @@ G[0] = [
 ];
 GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
 
+/* Kosakata bahasa Inggris: [inggris, indonesia, emoji] */
+const ENG = {
+  'en-animals': { name: 'Hewan', title: 'Animals', icon: '🐱', words: [
+    ['cat','kucing','🐱'],['dog','anjing','🐶'],['bird','burung','🐦'],['fish','ikan','🐟'],['cow','sapi','🐮'],['horse','kuda','🐴'],
+    ['duck','bebek','🦆'],['chicken','ayam','🐔'],['elephant','gajah','🐘'],['lion','singa','🦁'],['monkey','monyet','🐵'],['rabbit','kelinci','🐰'],
+    ['tiger','harimau','🐯'],['frog','katak','🐸'],['snake','ular','🐍'],['turtle','kura-kura','🐢'],['sheep','domba','🐑'],['goat','kambing','🐐'],
+    ['butterfly','kupu-kupu','🦋'],['bee','lebah','🐝'],['giraffe','jerapah','🦒'],['bear','beruang','🐻'],['crocodile','buaya','🐊'],['octopus','gurita','🐙']] },
+  'en-fruits': { name: 'Buah-buahan', title: 'Fruits', icon: '🍎', words: [
+    ['apple','apel','🍎'],['banana','pisang','🍌'],['orange','jeruk','🍊'],['grapes','anggur','🍇'],['watermelon','semangka','🍉'],['strawberry','stroberi','🍓'],
+    ['mango','mangga','🥭'],['pineapple','nanas','🍍'],['coconut','kelapa','🥥'],['lemon','lemon','🍋'],['pear','pir','🍐'],['peach','persik','🍑'],
+    ['cherry','ceri','🍒'],['melon','melon','🍈'],['kiwi','kiwi','🥝'],['avocado','alpukat','🥑'],['tomato','tomat','🍅'],['carrot','wortel','🥕']] },
+  'en-transport': { name: 'Transportasi', title: 'Transportation', icon: '🚗', words: [
+    ['car','mobil','🚗'],['bus','bus','🚌'],['train','kereta api','🚆'],['airplane','pesawat','✈️'],['ship','kapal besar','🚢'],['bicycle','sepeda','🚲'],
+    ['motorcycle','sepeda motor','🏍️'],['truck','truk','🚚'],['helicopter','helikopter','🚁'],['taxi','taksi','🚕'],['sailboat','perahu layar','⛵'],['ambulance','ambulans','🚑'],
+    ['fire truck','mobil pemadam','🚒'],['police car','mobil polisi','🚓'],['scooter','skuter','🛴'],['rocket','roket','🚀'],['tractor','traktor','🚜']] },
+  'en-jobs': { name: 'Profesi', title: 'Jobs', icon: '🧑‍🏫', words: [
+    ['teacher','guru','🧑‍🏫'],['doctor','dokter','🧑‍⚕️'],['police officer','polisi','👮'],['firefighter','pemadam kebakaran','🧑‍🚒'],['farmer','petani','🧑‍🌾'],['chef','koki','🧑‍🍳'],
+    ['pilot','pilot','🧑‍✈️'],['astronaut','astronaut','🧑‍🚀'],['painter','pelukis','🧑‍🎨'],['scientist','ilmuwan','🧑‍🔬'],['mechanic','montir','🧑‍🔧'],['singer','penyanyi','🧑‍🎤'],
+    ['builder','tukang bangunan','👷'],['programmer','pemrogram','🧑‍💻'],['office worker','pekerja kantor','🧑‍💼'],['judge','hakim','🧑‍⚖️']] }
+};
+const isEng = g => typeof g === 'string' && g.slice(0, 3) === 'en-';
+const emHTML = e => '<span class="em">' + e + '</span>';
+
+function buildEng(id, n, canListen) {
+  const T = ENG[id], ws = shuffle(T.words.slice()).slice(0, n);
+  const types = [];
+  for (let i = 0; i < n; i++) types.push(i % 3 === 1 && canListen ? 'listen' : (i % 3 === 2 ? 'id2en' : 'pic2en'));
+  const kinds = shuffle(types);
+  return ws.map((w, i) => {
+    const [en, idn, em] = w, others = shuffle(T.words.filter(x => x[0] !== en)).slice(0, 3), t = kinds[i];
+    const base = { kind: 'choice', lang: 'en', word: en, topic: T.title, ex: '<b>' + en + '</b> artinya <b>' + idn + '</b>.', desc: '' };
+    if (t === 'listen') {
+      const ch = shuffle([w].concat(others)).map(x => emHTML(x[2]));
+      return Object.assign(base, { q: 'Dengarkan, lalu pilih gambar yang benar.', vis: { type: 'emoji', e: '🔊' }, say: en, listen: true, choices: ch, correct: emHTML(em), ch: 'pic', show: em + ' ' + en, topic: 'Dengarkan' });
+    }
+    if (t === 'id2en') {
+      const ch = shuffle([w].concat(others)).map(x => x[0]);
+      return Object.assign(base, { q: 'Bahasa Inggris dari <b>' + idn + '</b> adalah ...', vis: null, choices: ch, correct: en, ch: 'words', show: en, topic: 'Cari kata' });
+    }
+    const ch = shuffle([w].concat(others)).map(x => x[0]);
+    return Object.assign(base, { q: 'Ini bahasa Inggrisnya apa?', vis: { type: 'emoji', e: em }, choices: ch, correct: en, ch: 'words', show: en, topic: 'Tebak gambar' });
+  });
+}
+
 
 (function () {
   const $ = s => document.querySelector(s);
-  const gname = g => g === 0 ? 'TK B' : 'Kelas ' + g;
+  const gname = g => isEng(g) ? 'English · ' + ENG[g].name : g === 0 ? 'TK B' : 'Kelas ' + g;
   const S = { n: 10, grade: 1, topic: null, qs: [], i: 0, ok: 0, streak: 0, top: 0, wrong: [], locked: true, ent: '', timer: 0 };
 
   const store = {
@@ -1058,9 +1131,25 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
     row.innerHTML = '<label for="vsel">Suara pembaca</label><select id="vsel">' + l.map(v => '<option value="' + esc(v.name) + '"' + (idVoice && v.name === idVoice.name ? ' selected' : '') + '>' + esc(v.name) + '</option>').join('') + '</select>';
   }
   if (canSpeak) { pickVoice(); try { speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) {} }
-  function say(text) {
+  let enVoice = null, enName = store.get('jh.evoice', '');
+  const enVoices = () => { try { return speechSynthesis.getVoices().filter(v => /^en([-_]|$)/i.test(v.lang)); } catch (e) { return []; } };
+  function pickEn() {
+    const l = enVoices(), us = l.filter(v => /^en[-_]US/i.test(v.lang));
+    enVoice = l.find(v => v.name === enName) || us.find(v => /natural|online|google|aria|samantha|jenny/i.test(v.name)) || us[0] || l[0] || null;
+    renderEn();
+  }
+  function renderEn() {
+    const row = $('#evrow'); if (!row) return;
+    const l = enVoices();
+    if (!canSpeak) { row.innerHTML = '<span>Perangkat ini tidak punya suara pembaca.</span>'; return; }
+    if (!l.length) { row.innerHTML = '<span>Suara bahasa Inggris belum ditemukan di perangkat ini. Coba buka lewat Microsoft Edge atau Google Chrome saat tersambung internet.</span>'; return; }
+    row.innerHTML = l.length < 2 ? '' : '<label for="esel">Suara bahasa Inggris</label><select id="esel">' + l.map(v => '<option value="' + esc(v.name) + '"' + (enVoice && v.name === enVoice.name ? ' selected' : '') + '>' + esc(v.name) + '</option>').join('') + '</select>';
+  }
+  if (canSpeak) { pickEn(); try { speechSynthesis.addEventListener('voiceschanged', pickEn); } catch (e) {} }
+  function say(text, lang) {
     if (!canSpeak) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'id-ID'; if (idVoice) u.voice = idVoice; u.rate = .88; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) {}
+    const en = lang === 'en';
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = en ? 'en-US' : 'id-ID'; const v = en ? enVoice : idVoice; if (v) u.voice = v; u.rate = en ? .8 : .88; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) {}
   }
   const hush = () => { if (canSpeak) try { speechSynthesis.cancel(); } catch (e) {} };
 
@@ -1092,7 +1181,7 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
     return h + '</div>';
   }
   function show(id) {
-    ['home', 'topics', 'play', 'result'].forEach(s => { $('#' + s).hidden = s !== id; });
+    ['home', 'topics', 'learn', 'play', 'result'].forEach(s => { $('#' + s).hidden = s !== id; });
     $('#' + id).scrollTop = 0;
   }
 
@@ -1157,6 +1246,7 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
   function visHTML(v, small) {
     if (!v) return '';
     if (v.type === 'dots') return dots(v.n, small);
+    if (v.type === 'emoji') return '<div class="vis' + (small ? ' sm' : '') + '"><div class="bigem" role="img" aria-label="gambar">' + v.e + '</div></div>';
     let h = '';
     if (v.type === 'nline') h = vNline(v); else if (v.type === 'bond') h = vBond(v); else if (v.type === 'bar') h = vBar(v);
     else if (v.type === 'fbar') h = vFbar(v); else if (v.type === 'cmpbar') h = vCmp(v); else if (v.type === 'units') h = vUnits(v);
@@ -1175,6 +1265,8 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
       return '<button class="grade' + (g === 0 ? ' wide' : '') + '" data-g="' + g + '"><span class="gn">' + (g === 0 ? 'TK' : g) + '</span><span class="gl">' + (g === 0 ? 'Kelompok B' : 'Kelas') + '</span><span class="gi">' + GRADE_INFO[g] + '</span><span class="gs">' + starRow(b ? b.s : 0) + (b ? '<span class="gb num">' + b.n + '</span>' : '') + '</span></button>';
     }).join('');
     $('#nm').value = name;
+    $('#engs').innerHTML = Object.keys(ENG).map(id => { const b = best[id], T = ENG[id];
+      return '<button class="grade" data-e="' + id + '"><span class="gn eg">' + T.icon + '</span><span class="gl">' + T.name + '</span><span class="gi">' + T.title + ' · ' + T.words.length + ' kata</span><span class="gs">' + starRow(b ? b.s : 0) + (b ? '<span class="gb num">' + b.n + '</span>' : '') + '</span></button>'; }).join('');
     $('#profs').innerHTML = profiles.map(p => '<button class="prof' + (p.id === curId ? ' on' : '') + '" data-p="' + p.id + '" type="button">' + avatar(p.av) + '<span>' + (p.name || 'Baru') + '</span></button>').join('') + (profiles.length < 5 ? '<button class="prof add" id="addp" type="button"><b>+</b><span>Tambah</span></button>' : '');
     $('#avbtn').innerHTML = avatar(P().av) + '<i>✎</i>';
     $('#avpick').innerHTML = [0, 1, 2, 3, 4, 5, 6, 7].map(i => '<button type="button" data-a="' + i + '" class="' + (i === P().av ? 'on' : '') + '" aria-label="Gambar ' + (i + 1) + '">' + avatar(i) + '</button>').join('');
@@ -1211,6 +1303,10 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
   $('#snd').addEventListener('click', () => { muted = !muted; store.set('jh.mute', muted); buildHome(); if (!muted) sfx('ok'); });
   $('#vrow').addEventListener('change', e => { if (e.target.id === 'vsel') { voiceName = e.target.value; store.set('jh.voice', voiceName); pickVoice(); say('Halo, ayo berhitung bersama.'); } });
   $('#vo').addEventListener('click', () => { vo = !vo; store.set('jh.vo', vo); buildHome(); if (vo) say('Penjelasan akan dibacakan.'); else hush(); });
+  $('#engs').addEventListener('click', e => {
+    const b = e.target.closest('.grade'); if (!b) return;
+    S.grade = b.dataset.e; buildTopics(); show('topics');
+  });
   $('#grades').addEventListener('click', e => {
     const b = e.target.closest('.grade'); if (!b) return;
     S.grade = +b.dataset.g; buildTopics(); show('topics');
@@ -1219,13 +1315,34 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
   /* ---- pilih topik ---- */
   function buildTopics() {
     $('#thead').textContent = gname(S.grade);
+    if (isEng(S.grade)) {
+      $('#tlist').innerHTML = '<button class="topic all" data-t="quiz"><span>Kuis</span><small>10 soal</small></button><button class="topic" data-t="learn"><span>Belajar kata</span><small>gambar + suara</small></button>';
+      return;
+    }
     $('#tlist').innerHTML = '<button class="topic all" data-t=""><span>Semua topik</span><small>campur</small></button>' +
       G[S.grade].map(g => '<button class="topic" data-t="' + g.id + '"><span>' + g.name + '</span></button>').join('') +
       ((GC[S.grade] || []).length ? '<h2 class="camhead">Gaya Cambridge &amp; Singapura</h2><p class="camnote">Belajar dengan gambar: model bar, garis bilangan, ikatan bilangan, dan cari kesalahan.</p>' +
       '<button class="topic cam" data-t="__c"><span>Semua gaya Cambridge</span><small>campur</small></button>' +
       GC[S.grade].map(g => '<button class="topic" data-t="' + g.id + '"><span>' + g.name + '</span><small>' + g.method + '</small></button>').join('') : '');
   }
-  $('#tlist').addEventListener('click', e => { const b = e.target.closest('.topic'); if (b) start(S.grade, b.dataset.t || null); });
+  $('#tlist').addEventListener('click', e => {
+    const b = e.target.closest('.topic'); if (!b) return;
+    if (isEng(S.grade)) { if (b.dataset.t === 'learn') openLearn(); else start(S.grade, null); return; }
+    start(S.grade, b.dataset.t || null);
+  });
+  function openLearn() {
+    const T = ENG[S.grade]; $('#lhead').textContent = T.name;
+    $('#lgrid').innerHTML = T.words.map((w, i) => '<button class="lc" data-i="' + i + '"><i><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 8.5a5 5 0 010 7"/></svg></i>' + emHTML(w[2]) + '<b>' + w[0] + '</b><small>' + w[1] + '</small></button>').join('');
+    renderEn(); show('learn');
+  }
+  $('#lgrid').addEventListener('click', e => {
+    const b = e.target.closest('.lc'); if (!b) return; const w = ENG[S.grade].words[+b.dataset.i];
+    document.querySelectorAll('.lc.on').forEach(x => x.classList.remove('on')); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 700);
+    say(w[0], 'en');
+  });
+  $('#evrow').addEventListener('change', e => { if (e.target.id === 'esel') { enName = e.target.value; store.set('jh.evoice', enName); pickEn(); say('Hello!', 'en'); } });
+  $('#lback').addEventListener('click', () => { hush(); buildTopics(); show('topics'); });
+  $('#lquiz').addEventListener('click', () => start(S.grade, null));
   $('#tback').addEventListener('click', () => { buildHome(); show('home'); });
 
   /* ---- permainan ---- */
@@ -1233,7 +1350,7 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
   function start(grade, topic) {
     clearTimeout(S.timer); hush();
     const n = grade === 0 ? 8 : 10;
-    Object.assign(S, { n, grade, topic, qs: buildRound(grade, topic, n), i: 0, ok: 0, streak: 0, top: 0, wrong: [], locked: true, ent: '' });
+    Object.assign(S, { n, grade, topic, qs: isEng(grade) ? buildEng(grade, n, canSpeak) : buildRound(grade, topic, n), i: 0, ok: 0, streak: 0, top: 0, wrong: [], locked: true, ent: '' });
     $('#track').innerHTML = '<i class="seg"></i>'.repeat(S.n);
     $('#cnt').textContent = '\u2713 0';
     show('play'); renderQ();
@@ -1246,7 +1363,7 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
     $('#vis').innerHTML = visHTML(q.vis);
     const pill = $('#qpill'); pill.hidden = !q.cam; pill.textContent = q.cam ? q.method : '';
     const hn = $('#qhint'); hn.hidden = !q.hint; hn.textContent = q.hint || '';
-    $('#qsay').hidden = !canSpeak || S.grade > 2;
+    $('#qsay').hidden = !canSpeak || (q.lang === 'en' ? !q.listen : S.grade > 2);
     document.querySelectorAll('.seg').forEach((s, k) => { s.classList.toggle('cur', k === S.i); });
     $('#sheet').hidden = true; hush();
     face('think');
@@ -1260,9 +1377,10 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
         '<button class="pk" data-k="0">0</button><button class="pk alt" data-k="back" aria-label="Hapus"><svg viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M12 9.5l5 5M17 9.5l-5 5"/></svg></button></div>' +
         '<button id="chk" class="btn go" type="button">Periksa</button>';
     }
-    if (S.grade === 0 && vo && canSpeak) setTimeout(() => { if (!S.locked && cur() === q) say(toSpeech(q.say || plain(q.q))); }, 350);
+    if (q.listen && canSpeak) setTimeout(() => { if (!S.locked && cur() === q) say(q.say, 'en'); }, 400);
+    else if (S.grade === 0 && vo && canSpeak) setTimeout(() => { if (!S.locked && cur() === q) say(toSpeech(q.say || plain(q.q))); }, 350);
   }
-  $('#qsay').addEventListener('click', () => { const q = cur(); if (q) say(toSpeech(q.say || plain(q.q))); });
+  $('#qsay').addEventListener('click', () => { const q = cur(); if (q && q.lang === 'en') say(q.say, 'en'); else if (q) say(toSpeech(q.say || plain(q.q))); });
   $('#answer').addEventListener('click', e => {
     const c = e.target.closest('.ch'), k = e.target.closest('.pk'), g = e.target.closest('#chk');
     if (c) pickChoice(+c.dataset.i); else if (k) key(k.dataset.k); else if (g) check();
@@ -1301,13 +1419,15 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
     const sh = $('#sheet'); sh.className = 'sheet ' + (ok ? 'ok' : 'bad'); sh.hidden = false;
     const pr = PRAISE[rnd(0, PRAISE.length - 1)];
     $('#sh').textContent = ok ? pr : (S.grade === 0 ? 'Hampir benar!' : 'Belum tepat');
-    if (ok && S.grade === 0 && vo) say(pr);
+    const en = q.lang === 'en';
+    if (en) say(q.word, 'en');
+    else if (ok && S.grade === 0 && vo) say(pr);
     $('#sp').innerHTML = ok ? (S.streak >= 3 ? 'Beruntun ' + S.streak + ' soal' : '') + '<span class="ex" id="sex" hidden>' + q.ex + '</span>' : 'Jawaban yang benar: <b>' + q.show + '</b><span class="ex" id="sex">' + q.ex + '</span>';
     $('#say').hidden = !canSpeak;
-    if (!ok && vo) say(toSpeech((S.grade === 0 ? 'Hampir benar. ' : 'Belum tepat. ') + 'Jawabannya ' + (q.ansSay || q.show) + '. ' + q.ex));
+    if (!ok && vo && !en) say(toSpeech((S.grade === 0 ? 'Hampir benar. ' : 'Belum tepat. ') + 'Jawabannya ' + (q.ansSay || q.show) + '. ' + q.ex));
     $('#next').textContent = S.i === S.n - 1 ? 'Lihat nilai' : 'Lanjut';
     sh.scrollIntoView({ block: 'nearest' });
-    if (ok) { const at = S.i; clearTimeout(S.timer); S.timer = setTimeout(() => { if (S.i === at && S.locked) next(); }, 1300); }
+    if (ok) { const at = S.i; clearTimeout(S.timer); S.timer = setTimeout(() => { if (S.i === at && S.locked) next(); }, en ? 2200 : 1300); }
   }
   function next() {
     clearTimeout(S.timer); hush(); if (!S.locked) return;
@@ -1316,6 +1436,7 @@ GRADE_INFO[0] = 'Hitung benda, bentuk, pola';
   $('#next').addEventListener('click', next);
   $('#say').addEventListener('click', () => {
     const q = cur(); clearTimeout(S.timer); const ex = $('#sex'); if (ex) ex.hidden = false;
+    if (q.lang === 'en') { say(q.word, 'en'); return; }
     say(toSpeech('Soal. ' + (q.say || q.q) + '. ' + (q.desc ? q.desc + '. ' : '') + 'Jawabannya ' + (q.ansSay || q.show) + '. ' + q.ex));
   });
 
