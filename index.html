@@ -255,6 +255,9 @@ h1,h2,h3,p{margin:0}
 .lc i svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .grade[data-e] .gl{letter-spacing:0;font-size:12px;align-self:center}
 .grade[data-e] .gi{font-size:13px}
+.grade .gn.eg.tx{font:800 38px/1 var(--f-disp);color:var(--blue)}
+.choices.lt .ch{font-family:var(--f-body);font-weight:700}
+.ltr .lc b{font-family:var(--f-body);font-weight:700;font-size:26px}
 .engnote{font-size:14px;color:var(--muted);margin-top:-6px}
 
 /* TK B */
@@ -323,6 +326,8 @@ h1,h2,h3,p{margin:0}
     <button id="delp" class="delp" type="button" hidden>Hapus profil ini</button>
     <h2 class="sect">Pilih kelas</h2>
     <div id="grades" class="grades"></div>
+    <h2 class="sect">Belajar Membaca · TK B</h2>
+    <div id="reads" class="grades"></div>
     <h2 class="sect">Belajar Bahasa Inggris</h2>
     <div id="engs" class="grades"></div>
     <div id="vrow" class="vrow" hidden></div>
@@ -1049,10 +1054,87 @@ function buildEng(id, n, canListen) {
   });
 }
 
+/* Belajar membaca TK B (bahasa Indonesia) */
+const LETTERS = [
+  ['A','a','apel','🍎'],['B','be','bola','⚽'],['C','ce','cangkir','☕'],['D','de','domba','🐑'],['E','é','es','🧊'],['F','ef','foto','📷'],
+  ['G','ge','gajah','🐘'],['H','ha','harimau','🐯'],['I','i','ikan','🐟'],['J','je','jeruk','🍊'],['K','ka','kucing','🐱'],['L','el','lebah','🐝'],
+  ['M','em','mobil','🚗'],['N','en','nanas','🍍'],['O','o','otak','🧠'],['P','pe','pisang','🍌'],['Q','ki','Quran','📖'],['R','er','roti','🍞'],
+  ['S','es','sapi','🐮'],['T','te','topi','🎩'],['U','u','ular','🐍'],['V','ve','vas','🏺'],['W','we','wortel','🥕'],['X','eks','xilofon','🎶'],
+  ['Y','ye','yogurt','🥛'],['Z','zet','zebra','🦓']];
+const VOWELS = ['A','I','U','E','O'];
+/* [kata, suku kata, emoji] */
+const RW = [
+  ['bola','bo-la','⚽'],['buku','bu-ku','📖'],['baju','ba-ju','👕'],['topi','to-pi','🎩'],['sapi','sa-pi','🐮'],['mata','ma-ta','👁️'],
+  ['kaki','ka-ki','🦶'],['roti','ro-ti','🍞'],['susu','su-su','🥛'],['kuda','ku-da','🐴'],['sapu','sa-pu','🧹'],['ikan','i-kan','🐟'],
+  ['ular','u-lar','🐍'],['apel','a-pel','🍎'],['ayam','a-yam','🐔'],['mobil','mo-bil','🚗'],['bunga','bu-nga','🌸'],['rumah','ru-mah','🏠'],
+  ['pintu','pin-tu','🚪'],['kunci','kun-ci','🔑'],['nanas','na-nas','🍍'],['pisang','pi-sang','🍌'],['payung','pa-yung','☂️'],['tangan','ta-ngan','✋'],
+  ['hidung','hi-dung','👃'],['gigi','gi-gi','🦷'],['bulan','bu-lan','🌙'],['bintang','bin-tang','⭐'],['awan','a-wan','☁️'],['api','a-pi','🔥'],
+  ['lilin','li-lin','🕯️'],['daun','da-un','🍃'],['kapal','ka-pal','🚢'],['tikus','ti-kus','🐭'],['domba','dom-ba','🐑'],['gajah','ga-jah','🐘'],['kucing','ku-cing','🐱']];
+
+const RD = {
+  'rd-huruf': { name: 'Huruf A-Z', title: 'Mengenal huruf', icon: 'Aa', lang: 'id', words: LETTERS.map(l => [l[0] + ' ' + l[0].toLowerCase(), l[2], l[3], l[1] + '. ' + l[2]]) },
+  'rd-vokal': { name: 'Huruf vokal', title: 'A I U E O', icon: '🅰️', lang: 'id', words: VOWELS.map(v => { const l = LETTERS.find(x => x[0] === v); return [v + ' ' + v.toLowerCase(), l[2], l[3], l[1] + '. ' + l[2]]; }) },
+  'rd-suku': { name: 'Suku kata', title: 'ba-ju, bo-la', icon: '🧩', lang: 'id', words: RW.map(w => [w[1], w[0], w[2], w[1].split('-').join('. ') + '. ' + w[0]]) },
+  'rd-kata': { name: 'Membaca kata', title: 'baca dan cocokkan', icon: '📖', lang: 'id', words: RW.map(w => [w[0], w[1], w[2], w[0]]) }
+};
+
+function buildRead(id, n, canListen) {
+  const mk = o => Object.assign({ kind: 'choice', lang: 'id', les: true, desc: '' }, o);
+  const pics = (w, pool) => shuffle([w].concat(shuffle(pool.filter(x => x[0] !== w[0])).slice(0, 3)));
+  let pool = [];
+  if (id === 'rd-huruf') {
+    LETTERS.forEach(l => {
+      const ex = '<b>' + l[0] + ' ' + l[0].toLowerCase() + '</b> untuk <b>' + l[2] + '</b>.';
+      pool.push(() => mk({ q: l[2][0].toUpperCase() + l[2].slice(1) + ' diawali huruf apa?', vis: { type: 'emoji', e: l[3] }, say: l[2], choices: shuffle([l].concat(shuffle(LETTERS.filter(x => x !== l)).slice(0, 3))).map(x => x[0]), correct: l[0], ch: 'big lt', show: l[0], ex, topic: 'Huruf awal', key: 'f' + l[0] }));
+      pool.push(() => mk({ q: 'Mana gambar yang diawali huruf <b>' + l[0] + '</b>?', vis: null, say: l[1], choices: pics(l, LETTERS).map(x => emHTML(x[3])), correct: emHTML(l[3]), ch: 'pic', show: l[3] + ' ' + l[2], ex, topic: 'Cari gambar', key: 'p' + l[0] }));
+      if (canListen) pool.push(() => mk({ q: 'Dengarkan, lalu pilih hurufnya.', vis: { type: 'emoji', e: '🔊' }, say: l[1], listen: true, choices: shuffle([l].concat(shuffle(LETTERS.filter(x => x !== l)).slice(0, 3))).map(x => x[0]), correct: l[0], ch: 'big lt', show: l[0] + ' ' + l[0].toLowerCase(), ex, topic: 'Dengarkan', key: 'l' + l[0] }));
+    });
+  } else if (id === 'rd-vokal') {
+    const CONS = 'BCDFGHJKLMNPRSTWZ'.split('');
+    VOWELS.forEach(v => {
+      const l = LETTERS.find(x => x[0] === v), ex = '<b>' + v + '</b> adalah huruf vokal. <b>' + v + '</b> untuk <b>' + l[2] + '</b>.';
+      pool.push(() => mk({ q: l[2][0].toUpperCase() + l[2].slice(1) + ' diawali huruf vokal apa?', vis: { type: 'emoji', e: l[3] }, say: l[2], choices: shuffle(VOWELS.filter(x => x !== v)).slice(0, 3).concat(v).sort(() => Math.random() - .5), correct: v, ch: 'big lt', show: v, ex, topic: 'Huruf awal', key: 'f' + v }));
+      for (let k = 0; k < 2; k++) pool.push(() => mk({ q: 'Mana yang huruf vokal?', vis: null, choices: shuffle(shuffle(CONS).slice(0, 3).concat(v)), correct: v, ch: 'big lt', show: v, ex, topic: 'Huruf vokal', key: 'v' + v + k }));
+      if (canListen) pool.push(() => mk({ q: 'Dengarkan, lalu pilih huruf vokalnya.', vis: { type: 'emoji', e: '🔊' }, say: l[1], listen: true, choices: shuffle(VOWELS.filter(x => x !== v)).slice(0, 3).concat(v).sort(() => Math.random() - .5), correct: v, ch: 'big lt', show: v, ex, topic: 'Dengarkan', key: 'l' + v }));
+    });
+  } else if (id === 'rd-suku') {
+    RW.forEach(w => {
+      const s = w[1].split('-'), cap = w[0], ex = '<b>' + w[1] + '</b> dibaca <b>' + cap + '</b>.';
+      const first = [...new Set(RW.map(x => x[1].split('-')[0]))].filter(x => x !== s[0]), last = [...new Set(RW.map(x => x[1].split('-').slice(-1)[0]))].filter(x => x !== s[s.length - 1]);
+      pool.push(() => mk({ q: 'Suku kata pertama dari <b>' + cap + '</b> adalah ...', vis: { type: 'emoji', e: w[2] }, say: cap, word: cap, choices: shuffle(shuffle(first).slice(0, 3).concat(s[0])), correct: s[0], ch: 'words', show: s[0], ex, topic: 'Suku kata awal', key: 'a' + cap }));
+      pool.push(() => mk({ q: 'Suku kata terakhir dari <b>' + cap + '</b> adalah ...', vis: { type: 'emoji', e: w[2] }, say: cap, word: cap, choices: shuffle(shuffle(last).slice(0, 3).concat(s[s.length - 1])), correct: s[s.length - 1], ch: 'words', show: s[s.length - 1], ex, topic: 'Suku kata akhir', key: 'z' + cap }));
+      pool.push(() => mk({ q: '<b>' + s.join('</b> + <b>') + '</b> dibaca ...', vis: null, say: s.join('. '), word: cap, choices: shuffle(shuffle(RW.filter(x => x[0] !== cap)).slice(0, 3).concat([w])).map(x => x[0]), correct: cap, ch: 'words', show: cap, ex, topic: 'Gabung suku kata', key: 'j' + cap }));
+    });
+  } else {
+    RW.forEach(w => {
+      const ex = '<b>' + w[0] + '</b> dibaca <b>' + w[1].split('-').join(' - ') + '</b>.';
+      pool.push(() => mk({ q: 'Gambar ini dibaca apa?', vis: { type: 'emoji', e: w[2] }, say: w[0], word: w[0], choices: shuffle(shuffle(RW.filter(x => x !== w)).slice(0, 3).concat([w])).map(x => x[0]), correct: w[0], ch: 'words', show: w[0], ex, topic: 'Tebak gambar', key: 'g' + w[0] }));
+      pool.push(() => mk({ q: 'Mana gambar <b>' + w[0] + '</b>?', vis: null, say: w[0], word: w[0], choices: pics(w, RW).map(x => emHTML(x[2])), correct: emHTML(w[2]), ch: 'pic', show: w[2] + ' ' + w[0], ex, topic: 'Cari gambar', key: 'p' + w[0] }));
+      if (canListen) pool.push(() => mk({ q: 'Dengarkan, lalu pilih gambarnya.', vis: { type: 'emoji', e: '🔊' }, say: w[0], word: w[0], listen: true, choices: pics(w, RW).map(x => emHTML(x[2])), correct: emHTML(w[2]), ch: 'pic', show: w[2] + ' ' + w[0], ex, topic: 'Dengarkan', key: 'l' + w[0] }));
+    });
+  }
+  /* ambil n soal: jenis soal diacak, tiap kata/huruf hanya sekali */
+  const out = [], used = new Set();
+  for (const f of shuffle(pool)) {
+    const q = f(), base = q.key.slice(1);
+    if (used.has(base) && pool.length > n * 3) continue;
+    used.add(base); out.push(q); if (out.length === n) break;
+  }
+  for (const f of shuffle(pool)) { if (out.length >= n) break; const q = f(); if (!out.some(o => o.key === q.key)) out.push(q); }
+  return out;
+}
+
+/* Daftar pelajaran gabungan: bahasa Inggris + membaca */
+const LES = {};
+Object.keys(ENG).forEach(k => { LES[k] = Object.assign({ lang: 'en' }, ENG[k]); });
+Object.keys(RD).forEach(k => { LES[k] = RD[k]; });
+const isLes = g => typeof g === 'string' && !!LES[g];
+function buildLes(id, n, canListen) { return id.slice(0, 3) === 'en-' ? buildEng(id, n, canListen) : buildRead(id, n, canListen); }
+
 
 (function () {
   const $ = s => document.querySelector(s);
-  const gname = g => isEng(g) ? 'English · ' + ENG[g].name : g === 0 ? 'TK B' : 'Kelas ' + g;
+  const gname = g => isLes(g) ? (LES[g].lang === 'en' ? 'English · ' : 'Membaca · ') + LES[g].name : g === 0 ? 'TK B' : 'Kelas ' + g;
   const S = { n: 10, grade: 1, topic: null, qs: [], i: 0, ok: 0, streak: 0, top: 0, wrong: [], locked: true, ent: '', timer: 0 };
 
   const store = {
@@ -1146,10 +1228,10 @@ function buildEng(id, n, canListen) {
     row.innerHTML = l.length < 2 ? '' : '<label for="esel">Suara bahasa Inggris</label><select id="esel">' + l.map(v => '<option value="' + esc(v.name) + '"' + (enVoice && v.name === enVoice.name ? ' selected' : '') + '>' + esc(v.name) + '</option>').join('') + '</select>';
   }
   if (canSpeak) { pickEn(); try { speechSynthesis.addEventListener('voiceschanged', pickEn); } catch (e) {} }
-  function say(text, lang) {
+  function say(text, lang, slow) {
     if (!canSpeak) return;
     const en = lang === 'en';
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = en ? 'en-US' : 'id-ID'; const v = en ? enVoice : idVoice; if (v) u.voice = v; u.rate = en ? .8 : .88; u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) {}
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = en ? 'en-US' : 'id-ID'; const v = en ? enVoice : idVoice; if (v) u.voice = v; u.rate = en ? .8 : (slow ? .72 : .88); u.pitch = 1.05; speechSynthesis.speak(u); } catch (e) {}
   }
   const hush = () => { if (canSpeak) try { speechSynthesis.cancel(); } catch (e) {} };
 
@@ -1265,8 +1347,10 @@ function buildEng(id, n, canListen) {
       return '<button class="grade' + (g === 0 ? ' wide' : '') + '" data-g="' + g + '"><span class="gn">' + (g === 0 ? 'TK' : g) + '</span><span class="gl">' + (g === 0 ? 'Kelompok B' : 'Kelas') + '</span><span class="gi">' + GRADE_INFO[g] + '</span><span class="gs">' + starRow(b ? b.s : 0) + (b ? '<span class="gb num">' + b.n + '</span>' : '') + '</span></button>';
     }).join('');
     $('#nm').value = name;
-    $('#engs').innerHTML = Object.keys(ENG).map(id => { const b = best[id], T = ENG[id];
-      return '<button class="grade" data-e="' + id + '"><span class="gn eg">' + T.icon + '</span><span class="gl">' + T.name + '</span><span class="gi">' + T.title + ' · ' + T.words.length + ' kata</span><span class="gs">' + starRow(b ? b.s : 0) + (b ? '<span class="gb num">' + b.n + '</span>' : '') + '</span></button>'; }).join('');
+    const card = id => { const b = best[id], T = LES[id];
+      return '<button class="grade" data-e="' + id + '"><span class="gn eg' + (T.icon.length < 3 && /^[A-Za-z]/.test(T.icon) ? ' tx' : '') + '">' + T.icon + '</span><span class="gl">' + T.name + '</span><span class="gi">' + T.title + ' · ' + T.words.length + (id === 'rd-huruf' || id === 'rd-vokal' ? ' huruf' : ' kata') + '</span><span class="gs">' + starRow(b ? b.s : 0) + (b ? '<span class="gb num">' + b.n + '</span>' : '') + '</span></button>'; };
+    $('#engs').innerHTML = Object.keys(LES).filter(k => k.slice(0, 3) === 'en-').map(card).join('');
+    $('#reads').innerHTML = Object.keys(LES).filter(k => k.slice(0, 3) === 'rd-').map(card).join('');
     $('#profs').innerHTML = profiles.map(p => '<button class="prof' + (p.id === curId ? ' on' : '') + '" data-p="' + p.id + '" type="button">' + avatar(p.av) + '<span>' + (p.name || 'Baru') + '</span></button>').join('') + (profiles.length < 5 ? '<button class="prof add" id="addp" type="button"><b>+</b><span>Tambah</span></button>' : '');
     $('#avbtn').innerHTML = avatar(P().av) + '<i>✎</i>';
     $('#avpick').innerHTML = [0, 1, 2, 3, 4, 5, 6, 7].map(i => '<button type="button" data-a="' + i + '" class="' + (i === P().av ? 'on' : '') + '" aria-label="Gambar ' + (i + 1) + '">' + avatar(i) + '</button>').join('');
@@ -1303,10 +1387,10 @@ function buildEng(id, n, canListen) {
   $('#snd').addEventListener('click', () => { muted = !muted; store.set('jh.mute', muted); buildHome(); if (!muted) sfx('ok'); });
   $('#vrow').addEventListener('change', e => { if (e.target.id === 'vsel') { voiceName = e.target.value; store.set('jh.voice', voiceName); pickVoice(); say('Halo, ayo berhitung bersama.'); } });
   $('#vo').addEventListener('click', () => { vo = !vo; store.set('jh.vo', vo); buildHome(); if (vo) say('Penjelasan akan dibacakan.'); else hush(); });
-  $('#engs').addEventListener('click', e => {
+  ['#engs', '#reads'].forEach(sel => $(sel).addEventListener('click', e => {
     const b = e.target.closest('.grade'); if (!b) return;
     S.grade = b.dataset.e; buildTopics(); show('topics');
-  });
+  }));
   $('#grades').addEventListener('click', e => {
     const b = e.target.closest('.grade'); if (!b) return;
     S.grade = +b.dataset.g; buildTopics(); show('topics');
@@ -1315,7 +1399,7 @@ function buildEng(id, n, canListen) {
   /* ---- pilih topik ---- */
   function buildTopics() {
     $('#thead').textContent = gname(S.grade);
-    if (isEng(S.grade)) {
+    if (isLes(S.grade)) {
       $('#tlist').innerHTML = '<button class="topic all" data-t="quiz"><span>Kuis</span><small>10 soal</small></button><button class="topic" data-t="learn"><span>Belajar kata</span><small>gambar + suara</small></button>';
       return;
     }
@@ -1327,18 +1411,20 @@ function buildEng(id, n, canListen) {
   }
   $('#tlist').addEventListener('click', e => {
     const b = e.target.closest('.topic'); if (!b) return;
-    if (isEng(S.grade)) { if (b.dataset.t === 'learn') openLearn(); else start(S.grade, null); return; }
+    if (isLes(S.grade)) { if (b.dataset.t === 'learn') openLearn(); else start(S.grade, null); return; }
     start(S.grade, b.dataset.t || null);
   });
   function openLearn() {
-    const T = ENG[S.grade]; $('#lhead').textContent = T.name;
+    const T = LES[S.grade]; $('#lhead').textContent = T.name;
+    $('#lgrid').className = 'lgrid' + (/huruf|vokal/.test(S.grade) ? ' ltr' : '');
     $('#lgrid').innerHTML = T.words.map((w, i) => '<button class="lc" data-i="' + i + '"><i><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 8.5a5 5 0 010 7"/></svg></i>' + emHTML(w[2]) + '<b>' + w[0] + '</b><small>' + w[1] + '</small></button>').join('');
-    renderEn(); show('learn');
+    if (T.lang === 'en') renderEn(); else $('#evrow').innerHTML = '';
+    show('learn');
   }
   $('#lgrid').addEventListener('click', e => {
-    const b = e.target.closest('.lc'); if (!b) return; const w = ENG[S.grade].words[+b.dataset.i];
+    const b = e.target.closest('.lc'); if (!b) return; const T = LES[S.grade], w = T.words[+b.dataset.i];
     document.querySelectorAll('.lc.on').forEach(x => x.classList.remove('on')); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 700);
-    say(w[0], 'en');
+    say(w[3] || w[0], T.lang, T.lang !== 'en');
   });
   $('#evrow').addEventListener('change', e => { if (e.target.id === 'esel') { enName = e.target.value; store.set('jh.evoice', enName); pickEn(); say('Hello!', 'en'); } });
   $('#lback').addEventListener('click', () => { hush(); buildTopics(); show('topics'); });
@@ -1350,7 +1436,7 @@ function buildEng(id, n, canListen) {
   function start(grade, topic) {
     clearTimeout(S.timer); hush();
     const n = grade === 0 ? 8 : 10;
-    Object.assign(S, { n, grade, topic, qs: isEng(grade) ? buildEng(grade, n, canSpeak) : buildRound(grade, topic, n), i: 0, ok: 0, streak: 0, top: 0, wrong: [], locked: true, ent: '' });
+    Object.assign(S, { n, grade, topic, qs: isLes(grade) ? buildLes(grade, n, canSpeak) : buildRound(grade, topic, n), i: 0, ok: 0, streak: 0, top: 0, wrong: [], locked: true, ent: '' });
     $('#track').innerHTML = '<i class="seg"></i>'.repeat(S.n);
     $('#cnt').textContent = '\u2713 0';
     show('play'); renderQ();
@@ -1363,7 +1449,7 @@ function buildEng(id, n, canListen) {
     $('#vis').innerHTML = visHTML(q.vis);
     const pill = $('#qpill'); pill.hidden = !q.cam; pill.textContent = q.cam ? q.method : '';
     const hn = $('#qhint'); hn.hidden = !q.hint; hn.textContent = q.hint || '';
-    $('#qsay').hidden = !canSpeak || (q.lang === 'en' ? !q.listen : S.grade > 2);
+    $('#qsay').hidden = !canSpeak || (q.les ? !q.listen : S.grade > 2);
     document.querySelectorAll('.seg').forEach((s, k) => { s.classList.toggle('cur', k === S.i); });
     $('#sheet').hidden = true; hush();
     face('think');
@@ -1377,10 +1463,10 @@ function buildEng(id, n, canListen) {
         '<button class="pk" data-k="0">0</button><button class="pk alt" data-k="back" aria-label="Hapus"><svg viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M12 9.5l5 5M17 9.5l-5 5"/></svg></button></div>' +
         '<button id="chk" class="btn go" type="button">Periksa</button>';
     }
-    if (q.listen && canSpeak) setTimeout(() => { if (!S.locked && cur() === q) say(q.say, 'en'); }, 400);
+    if (q.listen && canSpeak) setTimeout(() => { if (!S.locked && cur() === q) say(q.say, q.lang, true); }, 400);
     else if (S.grade === 0 && vo && canSpeak) setTimeout(() => { if (!S.locked && cur() === q) say(toSpeech(q.say || plain(q.q))); }, 350);
   }
-  $('#qsay').addEventListener('click', () => { const q = cur(); if (q && q.lang === 'en') say(q.say, 'en'); else if (q) say(toSpeech(q.say || plain(q.q))); });
+  $('#qsay').addEventListener('click', () => { const q = cur(); if (q && q.les) say(q.say, q.lang, true); else if (q) say(toSpeech(q.say || plain(q.q))); });
   $('#answer').addEventListener('click', e => {
     const c = e.target.closest('.ch'), k = e.target.closest('.pk'), g = e.target.closest('#chk');
     if (c) pickChoice(+c.dataset.i); else if (k) key(k.dataset.k); else if (g) check();
@@ -1419,8 +1505,8 @@ function buildEng(id, n, canListen) {
     const sh = $('#sheet'); sh.className = 'sheet ' + (ok ? 'ok' : 'bad'); sh.hidden = false;
     const pr = PRAISE[rnd(0, PRAISE.length - 1)];
     $('#sh').textContent = ok ? pr : (S.grade === 0 ? 'Hampir benar!' : 'Belum tepat');
-    const en = q.lang === 'en';
-    if (en) say(q.word, 'en');
+    const en = !!q.les;
+    if (en) say(q.word || q.say, q.lang, true);
     else if (ok && S.grade === 0 && vo) say(pr);
     $('#sp').innerHTML = ok ? (S.streak >= 3 ? 'Beruntun ' + S.streak + ' soal' : '') + '<span class="ex" id="sex" hidden>' + q.ex + '</span>' : 'Jawaban yang benar: <b>' + q.show + '</b><span class="ex" id="sex">' + q.ex + '</span>';
     $('#say').hidden = !canSpeak;
@@ -1436,7 +1522,7 @@ function buildEng(id, n, canListen) {
   $('#next').addEventListener('click', next);
   $('#say').addEventListener('click', () => {
     const q = cur(); clearTimeout(S.timer); const ex = $('#sex'); if (ex) ex.hidden = false;
-    if (q.lang === 'en') { say(q.word, 'en'); return; }
+    if (q.les) { say(q.word || q.say, q.lang, true); return; }
     say(toSpeech('Soal. ' + (q.say || q.q) + '. ' + (q.desc ? q.desc + '. ' : '') + 'Jawabannya ' + (q.ansSay || q.show) + '. ' + q.ex));
   });
 
