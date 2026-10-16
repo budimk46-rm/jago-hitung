@@ -1567,5 +1567,5 @@ function buildLes(id, n, canListen) { return id.slice(0, 3) === 'en-' ? buildEng
 })();
 </script>
 
-<script>if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}</script>
+<script>if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){window.addEventListener('load',function(){var had=!!navigator.serviceWorker.controller,rl=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(had&&!rl){rl=true;location.reload();}});navigator.serviceWorker.register('./sw.js').catch(function(){});});}</script>
 </body></html>
